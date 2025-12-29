@@ -144,8 +144,8 @@ def extract_menu_from_html(html):
     for el in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'noscript', 'iframe']):
         el.decompose()
 
-    # Ta bort element med navigation-klasser (undvik att ta bort faktiskt menyinnehåll)
-    nav_patterns = ['nav-', 'navbar', 'navigation', 'header-nav', 'footer', 'sidebar', 'social', 'cookie', 'popup']
+    # Ta bort element med navigation-klasser
+    nav_patterns = ['nav', 'menu', 'header', 'footer', 'sidebar', 'social', 'cookie', 'popup']
     for el in soup.find_all(class_=lambda x: x and any(p in str(x).lower() for p in nav_patterns)):
         el.decompose()
 
@@ -163,23 +163,30 @@ def extract_menu_from_html(html):
     if main:
         text = main.get_text(separator='\n', strip=True)
 
-        # Filtrera bort typiska navigationsrader (men INTE meny-relaterade ord!)
+        # Filtrera bort typiska navigationsrader
         lines = text.split('\n')
         filtered_lines = []
-        # Undvik att filtrera "meny/menu" - de kan vara del av lunchmenyn
-        nav_keywords = ['events', 'catering', 'galleri', 'gallery', 'boka bord',
-                       'om oss', 'about us', 'kontakta', 'contact us', 'instagram', 'facebook',
-                       'copyright', 'all rights', 'integritetspolicy', 'privacy', 'nyhetsbrev']
+
+        # Exakta navigationsord som ska filtreras bort (endast om de står ensamma)
+        nav_exact = ['meny', 'menu', 'lunch', 'events', 'catering', 'galleri', 'gallery',
+                     'boka bord', 'om oss', 'about', 'about us', 'kontakt', 'contact',
+                     'instagram', 'facebook', 'hem', 'home', 'nyheter', 'news']
 
         for line in lines:
             line_lower = line.lower().strip()
+
             # Skippa copyright-rader
             if 'copyright' in line_lower or '©' in line:
                 continue
-            # Skippa mycket korta navigationsrader
-            if len(line_lower) < 15:
-                if any(nav in line_lower for nav in nav_keywords):
-                    continue
+
+            # Skippa exakta navigationsord (ensamma på rad)
+            if line_lower in nav_exact:
+                continue
+
+            # Skippa korta rader med "boka" eller liknande
+            if len(line_lower) < 15 and any(x in line_lower for x in ['boka', 'kontakta', 'följ oss']):
+                continue
+
             filtered_lines.append(line)
 
         text = '\n'.join(filtered_lines)
@@ -188,10 +195,6 @@ def extract_menu_from_html(html):
 
         # Formatera för bättre läsbarhet
         text = format_menu_text(text)
-
-        # Om texten är tom eller för kort, returnera ett tydligt meddelande
-        if len(text.strip()) < 50:
-            return "Kunde inte extrahera menyinnehåll. Sidan kan använda JavaScript för att ladda innehållet."
 
         return text[:3000]
 

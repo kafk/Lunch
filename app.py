@@ -4,6 +4,7 @@ import os
 from scraper import scrape_lunch_menu
 
 app = Flask(__name__)
+VERSION = "1.0.0"
 
 # Supabase setup (om miljövariabler finns)
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -398,7 +399,7 @@ HTML_TEMPLATE = '''
 <body>
     <nav>
         <div class="nav-container">
-            <div class="logo">Lunchmeny</div>
+            <div class="logo">Lunchmeny <span style="font-size:0.7rem;opacity:0.6">v{{ version }}</span></div>
             <button class="nav-btn" onclick="openSidebar()">
                 <span>Restauranger</span>
             </button>
@@ -650,7 +651,7 @@ HTML_TEMPLATE = '''
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    return render_template_string(HTML_TEMPLATE, version=VERSION)
 
 
 @app.route('/api/restaurants', methods=['GET'])
