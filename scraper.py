@@ -140,8 +140,8 @@ def extract_menu_from_html(html):
     """Extrahera menytext från HTML."""
     soup = BeautifulSoup(html, 'html.parser')
 
-    # Ta bort onödiga element (navigation, footer, etc.)
-    for el in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'noscript', 'iframe']):
+    # Ta bort onödiga element (bara script/style - behåll struktur)
+    for el in soup(['script', 'style', 'noscript', 'iframe']):
         el.decompose()
 
     # Ta bort element med navigation-klasser (INTE 'menu' - det kan vara menyinnehåll!)
