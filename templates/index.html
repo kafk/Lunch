@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Dagens Lunch{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="header">
+        <h1>Dagens Lunchmenyer</h1>
+        <button id="refresh-btn" class="btn btn-primary">
+            <span class="btn-text">🔄 Uppdatera</span>
+            <span class="btn-loading" style="display: none;">⏳ Laddar...</span>
+        </button>
+    </div>
+
+    <div id="menus-container">
+        <p class="info-text">Klicka på "Uppdatera" för att hämta dagens menyer.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const refreshBtn = document.getElementById('refresh-btn');
+    const menusContainer = document.getElementById('menus-container');
+    const btnText = refreshBtn.querySelector('.btn-text');
+    const btnLoading = refreshBtn.querySelector('.btn-loading');
+
+    async function fetchMenus() {
+        refreshBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline';
+
+        try {
+            const response = await fetch('/api/menus');
+            const menus = await response.json();
+
+            if (menus.length === 0) {
+                menusContainer.innerHTML = `
+                    <div class="empty-state">
+                        <p>Inga restauranger tillagda ännu.</p>
+                        <a href="/settings" class="btn btn-secondary">Lägg till restauranger</a>
+                    </div>
+                `;
+                return;
+            }
+
+            menusContainer.innerHTML = menus.map(menu => `
+                <div class="menu-card ${menu.error ? 'error' : ''}">
+                    <div class="menu-header">
+                        <h2>${escapeHtml(menu.name)}</h2>
+                        <a href="${escapeHtml(menu.url)}" target="_blank" class="link">Besök sida →</a>
+                    </div>
+                    <div class="menu-content">
+                        ${menu.error
+                            ? `<p class="error-text">Fel: ${escapeHtml(menu.error)}</p>`
+                            : `<pre>${escapeHtml(menu.menu)}</pre>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            menusContainer.innerHTML = `
+                <div class="error-state">
+                    <p>Kunde inte hämta menyer: ${escapeHtml(error.message)}</p>
+                </div>
+            `;
+        } finally {
+            refreshBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
+        }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    refreshBtn.addEventListener('click', fetchMenus);
+</script>
+{% endblock %}
