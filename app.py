@@ -1,23 +1,30 @@
 from flask import Flask, render_template_string, request, jsonify
 import json
 import os
+import sys
 from scraper import scrape_lunch_menu
 
 app = Flask(__name__)
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 # Supabase setup (om miljövariabler finns)
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase_client = None
 
+# Debug: visa om miljövariabler finns
+print(f"==> SUPABASE_URL finns: {bool(SUPABASE_URL)}", flush=True)
+print(f"==> SUPABASE_KEY finns: {bool(SUPABASE_KEY)}", flush=True)
+
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         from supabase import create_client
         supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("Supabase ansluten!")
+        print("==> Supabase ansluten!", flush=True)
     except Exception as e:
-        print(f"Kunde inte ansluta till Supabase: {e}")
+        print(f"==> Kunde inte ansluta till Supabase: {e}", flush=True)
+else:
+    print("==> Supabase miljövariabler saknas - använder lokal fil", flush=True)
 
 # Fallback till fil om ingen databas
 DATA_FILE = 'restaurants.json'
