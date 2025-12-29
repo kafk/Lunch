@@ -78,6 +78,35 @@ def find_lunch_links(html, base_url):
     return candidates
 
 
+def format_menu_text(text):
+    """Formatera menytext för bättre läsbarhet."""
+    # Veckodagar - lägg till radbrytning före
+    weekdays = ['MÅNDAG', 'TISDAG', 'ONSDAG', 'TORSDAG', 'FREDAG', 'LÖRDAG', 'SÖNDAG']
+    for day in weekdays:
+        text = re.sub(rf'({day})', r'\n\n\1', text, flags=re.IGNORECASE)
+
+    # Kategorier - lägg till radbrytning före
+    categories = ['KÖTT', 'FISK', 'PASTA', 'SALLAD', 'BURGARE', 'VEGETARISKT', 'VEGAN', 'DESSERT', 'LUNCH V']
+    for cat in categories:
+        text = re.sub(rf'({cat})', r'\n\n\1', text, flags=re.IGNORECASE)
+
+    # Bullet points (❖) - lägg till radbrytning före
+    text = re.sub(r'(❖)', r'\n  \1 ', text)
+
+    # Andra vanliga punkttecken
+    text = re.sub(r'(•)', r'\n  \1 ', text)
+    text = re.sub(r'(\*\s)', r'\n  \1', text)
+
+    # Priser - lägg till radbrytning efter
+    text = re.sub(r'(\d+\s*kr/?(?:\s*\d+\s*kr)?)', r'\1\n', text)
+
+    # Städa upp multipla radbrytningar
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'^\s+', '', text)  # Ta bort inledande whitespace
+
+    return text.strip()
+
+
 def extract_pdf_text(pdf_content):
     """Extrahera text från PDF-innehåll."""
     try:
@@ -91,8 +120,10 @@ def extract_pdf_text(pdf_content):
                 text_parts.append(page_text)
 
         full_text = '\n'.join(text_parts)
-        # Städa upp texten
-        full_text = re.sub(r'\n{3,}', '\n\n', full_text)
+
+        # Formatera texten för bättre läsbarhet
+        full_text = format_menu_text(full_text)
+
         return full_text.strip()
     except Exception as e:
         return f"Kunde inte läsa PDF: {str(e)}"
