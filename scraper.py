@@ -140,16 +140,55 @@ def extract_menu_from_html(html):
     """Extrahera menytext från HTML."""
     soup = BeautifulSoup(html, 'html.parser')
 
-    # Ta bort onödiga element
-    for el in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+    # Ta bort onödiga element (navigation, footer, etc.)
+    for el in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'noscript', 'iframe']):
         el.decompose()
+
+    # Ta bort element med navigation-klasser
+    nav_patterns = ['nav', 'menu', 'header', 'footer', 'sidebar', 'social', 'cookie', 'popup']
+    for el in soup.find_all(class_=lambda x: x and any(p in str(x).lower() for p in nav_patterns)):
+        el.decompose()
+
+    # Ta bort navigation-liknande ul/li-listor med korta länkar
+    for ul in soup.find_all('ul'):
+        links = ul.find_all('a')
+        if links and len(links) > 3:
+            # Kolla om det är korta navigationslänkar
+            short_links = sum(1 for a in links if len(a.get_text(strip=True)) < 20)
+            if short_links / len(links) > 0.7:
+                ul.decompose()
 
     # Hämta huvudinnehållet
     main = soup.find('main') or soup.find('article') or soup.find('body')
     if main:
         text = main.get_text(separator='\n', strip=True)
+
+        # Filtrera bort typiska navigationsrader
+        lines = text.split('\n')
+        filtered_lines = []
+        nav_keywords = ['meny', 'menu', 'events', 'catering', 'galleri', 'gallery', 'boka bord',
+                       'om oss', 'about', 'kontakt', 'contact', 'instagram', 'facebook',
+                       'copyright', 'all rights', 'integritetspolicy', 'privacy']
+
+        for line in lines:
+            line_lower = line.lower().strip()
+            # Skippa korta rader som bara är navigation
+            if len(line_lower) < 25:
+                # Kolla om raden matchar navigation
+                if any(nav in line_lower for nav in nav_keywords) and len(line_lower) < 20:
+                    continue
+            # Skippa copyright-rader
+            if 'copyright' in line_lower or '©' in line:
+                continue
+            filtered_lines.append(line)
+
+        text = '\n'.join(filtered_lines)
         text = re.sub(r'\n{3,}', '\n\n', text)
         text = re.sub(r' {2,}', ' ', text)
+
+        # Formatera för bättre läsbarhet
+        text = format_menu_text(text)
+
         return text[:3000]
 
     return "Kunde inte extrahera menyinnehåll."
