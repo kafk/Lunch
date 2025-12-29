@@ -32,7 +32,7 @@ def find_lunch_links(html, base_url):
     Hitta alla länkar som kan vara relaterade till lunchmenyn.
     Returnerar lista med (url, typ, score) där typ är 'page' eller 'pdf'.
     """
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html, 'html.parser')
     candidates = []
 
     for link in soup.find_all('a', href=True):
@@ -100,7 +100,7 @@ def extract_pdf_text(pdf_content):
 
 def extract_menu_from_html(html):
     """Extrahera menytext från HTML."""
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html, 'html.parser')
 
     # Ta bort onödiga element
     for el in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
