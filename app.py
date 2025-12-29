@@ -4,7 +4,7 @@ import os
 from scraper import scrape_lunch_menu
 
 app = Flask(__name__)
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 # Supabase setup (om miljövariabler finns)
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -43,16 +43,21 @@ def save_restaurants(restaurants):
     """Spara restauranger till Supabase eller lokal fil."""
     if supabase_client:
         try:
-            # Rensa och skriv om alla
-            supabase_client.table('restaurants').delete().neq('id', 0).execute()
+            # Rensa tabellen först
+            supabase_client.table('restaurants').delete().gte('id', 0).execute()
+            # Lägg till alla restauranger
             for r in restaurants:
                 supabase_client.table('restaurants').insert({
                     'name': r['name'],
                     'url': r['url'],
                     'enabled': r.get('enabled', True)
                 }).execute()
+            print(f"Sparade {len(restaurants)} restauranger till Supabase")
         except Exception as e:
             print(f"Fel vid sparning till Supabase: {e}")
+            # Fallback till fil
+            with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(restaurants, f, ensure_ascii=False, indent=2)
     else:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(restaurants, f, ensure_ascii=False, indent=2)
