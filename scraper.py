@@ -163,23 +163,23 @@ def extract_menu_from_html(html):
     if main:
         text = main.get_text(separator='\n', strip=True)
 
-        # Filtrera bort typiska navigationsrader
+        # Filtrera bort typiska navigationsrader (men INTE meny-relaterade ord!)
         lines = text.split('\n')
         filtered_lines = []
-        nav_keywords = ['meny', 'menu', 'events', 'catering', 'galleri', 'gallery', 'boka bord',
-                       'om oss', 'about', 'kontakt', 'contact', 'instagram', 'facebook',
-                       'copyright', 'all rights', 'integritetspolicy', 'privacy']
+        # Undvik att filtrera "meny/menu" - de kan vara del av lunchmenyn
+        nav_keywords = ['events', 'catering', 'galleri', 'gallery', 'boka bord',
+                       'om oss', 'about us', 'kontakta', 'contact us', 'instagram', 'facebook',
+                       'copyright', 'all rights', 'integritetspolicy', 'privacy', 'nyhetsbrev']
 
         for line in lines:
             line_lower = line.lower().strip()
-            # Skippa korta rader som bara är navigation
-            if len(line_lower) < 25:
-                # Kolla om raden matchar navigation
-                if any(nav in line_lower for nav in nav_keywords) and len(line_lower) < 20:
-                    continue
             # Skippa copyright-rader
             if 'copyright' in line_lower or '©' in line:
                 continue
+            # Skippa mycket korta navigationsrader
+            if len(line_lower) < 15:
+                if any(nav in line_lower for nav in nav_keywords):
+                    continue
             filtered_lines.append(line)
 
         text = '\n'.join(filtered_lines)
@@ -188,6 +188,10 @@ def extract_menu_from_html(html):
 
         # Formatera för bättre läsbarhet
         text = format_menu_text(text)
+
+        # Om texten är tom eller för kort, returnera ett tydligt meddelande
+        if len(text.strip()) < 50:
+            return "Kunde inte extrahera menyinnehåll. Sidan kan använda JavaScript för att ladda innehållet."
 
         return text[:3000]
 
