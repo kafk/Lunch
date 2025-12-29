@@ -5,7 +5,7 @@ import sys
 from scraper import scrape_lunch_menu
 
 app = Flask(__name__)
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 
 # Supabase setup (om miljövariabler finns)
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
