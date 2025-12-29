@@ -5,20 +5,56 @@ from scraper import scrape_lunch_menu
 
 app = Flask(__name__)
 
-# Fil för att spara restauranger
+# Supabase setup (om miljövariabler finns)
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+supabase_client = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        from supabase import create_client
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print("Supabase ansluten!")
+    except Exception as e:
+        print(f"Kunde inte ansluta till Supabase: {e}")
+
+# Fallback till fil om ingen databas
 DATA_FILE = 'restaurants.json'
 
 
 def load_restaurants():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
+    """Ladda restauranger från Supabase eller lokal fil."""
+    if supabase_client:
+        try:
+            response = supabase_client.table('restaurants').select('*').order('id').execute()
+            return [{'name': r['name'], 'url': r['url'], 'enabled': r.get('enabled', True)} for r in response.data]
+        except Exception as e:
+            print(f"Fel vid laddning från Supabase: {e}")
+            return []
+    else:
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
 
 
 def save_restaurants(restaurants):
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(restaurants, f, ensure_ascii=False, indent=2)
+    """Spara restauranger till Supabase eller lokal fil."""
+    if supabase_client:
+        try:
+            # Rensa och skriv om alla
+            supabase_client.table('restaurants').delete().neq('id', 0).execute()
+            for r in restaurants:
+                supabase_client.table('restaurants').insert({
+                    'name': r['name'],
+                    'url': r['url'],
+                    'enabled': r.get('enabled', True)
+                }).execute()
+        except Exception as e:
+            print(f"Fel vid sparning till Supabase: {e}")
+    else:
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(restaurants, f, ensure_ascii=False, indent=2)
 
 
 HTML_TEMPLATE = '''
