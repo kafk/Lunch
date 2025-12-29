@@ -26,20 +26,29 @@ HTML_TEMPLATE = '''
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lunchmeny</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
             color: #333;
             line-height: 1.6;
         }
+
+        /* Navigation */
         nav {
             background: #2c3e50;
             color: white;
             padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         .nav-container {
             max-width: 1200px;
@@ -48,50 +57,70 @@ HTML_TEMPLATE = '''
             justify-content: space-between;
             align-items: center;
         }
-        .logo { font-size: 1.5rem; font-weight: bold; }
+        .logo { font-size: 1.3rem; font-weight: bold; }
         .nav-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.15);
+            border: none;
             color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .nav-btn:hover { background: rgba(255,255,255,0.2); }
+        .nav-btn:hover { background: rgba(255,255,255,0.25); }
+        .nav-btn:active { background: rgba(255,255,255,0.3); }
+
+        /* Main content */
         main {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1.5rem;
+            padding-bottom: 100px;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
             gap: 1rem;
         }
-        h1 { font-size: 2rem; color: #2c3e50; }
+        h1 { font-size: 1.5rem; color: #2c3e50; }
+
+        /* Buttons */
         .btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem 1.25rem;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
             transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
         .btn-primary { background: #3498db; color: white; }
         .btn-primary:hover:not(:disabled) { background: #2980b9; }
+        .btn-primary:active:not(:disabled) { background: #2472a4; transform: scale(0.98); }
         .btn-primary:disabled { background: #95a5a6; cursor: not-allowed; }
-        .btn-danger { background: #e74c3c; color: white; padding: 0.5rem 1rem; font-size: 0.85rem; }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            padding: 0.6rem 0.8rem;
+            font-size: 1.1rem;
+            min-width: 44px;
+            min-height: 44px;
+        }
         .btn-danger:hover { background: #c0392b; }
+        .btn-danger:active { background: #a93226; }
 
+        /* Menu Cards */
         .menu-card {
             background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .menu-card.error { border-left: 4px solid #e74c3c; }
         .menu-card.loading { border-left: 4px solid #f39c12; }
@@ -101,49 +130,37 @@ HTML_TEMPLATE = '''
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
             border-bottom: 1px solid #eee;
-            flex-wrap: wrap;
             gap: 0.5rem;
         }
-        .menu-header h2 { color: #2c3e50; font-size: 1.25rem; }
-        .menu-header a { color: #3498db; text-decoration: none; font-size: 0.9rem; }
-        .menu-header a:hover { text-decoration: underline; }
-        .menu-title-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .menu-title-row input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
+        .menu-header h2 { color: #2c3e50; font-size: 1.1rem; }
+        .menu-header a { color: #3498db; text-decoration: none; font-size: 0.85rem; }
         .source-info {
-            font-size: 0.8rem;
-            color: #7f8c8d;
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-        .source-info .badge {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: 3px;
             font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-bottom: 0.75rem;
+            padding: 0.4rem 0.6rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
             font-weight: bold;
-            margin-right: 0.5rem;
+            margin-right: 0.4rem;
         }
         .badge-pdf { background: #e74c3c; color: white; }
         .badge-html { background: #3498db; color: white; }
         .menu-content {
             white-space: pre-wrap;
-            font-size: 0.95rem;
-            line-height: 1.8;
+            font-size: 0.9rem;
+            line-height: 1.7;
             color: #444;
-            max-height: 500px;
+            max-height: 400px;
             overflow-y: auto;
         }
         .error-text { color: #e74c3c; }
@@ -151,131 +168,246 @@ HTML_TEMPLATE = '''
         .disabled-text { color: #95a5a6; font-style: italic; }
         .info-text {
             text-align: center;
-            padding: 3rem;
+            padding: 2.5rem 1.5rem;
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             color: #7f8c8d;
         }
 
-        /* Modal */
-        .modal-overlay {
-            display: none;
+        /* Sidebar Overlay */
+        .sidebar-overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
         }
-        .modal-overlay.active { display: flex; }
-        .modal {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
-        .modal h2 { margin-bottom: 1.5rem; color: #2c3e50; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #34495e;
-        }
-        .form-group input[type="text"],
-        .form-group input[type="url"] {
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
+            max-width: 400px;
+            height: 100%;
+            background: white;
+            z-index: 300;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
         }
-        .form-group input:focus { outline: none; border-color: #3498db; }
-        .modal-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; }
-        .url-list { margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem; }
-        .url-list h3 { margin-bottom: 1rem; color: #34495e; }
-        .url-item {
+        .sidebar.active {
+            transform: translateX(0);
+        }
+        .sidebar-header {
+            padding: 1.25rem;
+            background: #2c3e50;
+            color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem;
-            background: #f8f9fa;
-            border-radius: 6px;
-            margin-bottom: 0.5rem;
         }
-        .url-item.disabled { opacity: 0.6; }
-        .url-item-left {
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .sidebar-close {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            justify-content: center;
+        }
+        .sidebar-close:hover { background: rgba(255,255,255,0.25); }
+
+        .sidebar-content {
             flex: 1;
-            overflow: hidden;
+            overflow-y: auto;
+            padding: 1.25rem;
+            -webkit-overflow-scrolling: touch;
         }
-        .url-item-left input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+
+        /* Add form */
+        .add-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .add-section h3 {
+            font-size: 0.9rem;
+            color: #34495e;
+            margin-bottom: 0.75rem;
+        }
+        .form-group { margin-bottom: 0.75rem; }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+            color: #34495e;
+            font-size: 0.85rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            -webkit-appearance: none;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+        }
+        .add-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
+            margin-top: 0.5rem;
         }
-        .url-item-info { flex: 1; overflow: hidden; }
-        .url-item-name { font-weight: 500; color: #2c3e50; }
-        .url-item-url {
+        .add-btn:hover { background: #219a52; }
+        .add-btn:active { background: #1e8449; }
+
+        /* Restaurant list */
+        .restaurant-list h3 {
+            font-size: 0.9rem;
+            color: #34495e;
+            margin-bottom: 0.5rem;
+        }
+        .restaurant-list-info {
             font-size: 0.8rem;
-            color: #7f8c8d;
+            color: #95a5a6;
+            margin-bottom: 1rem;
+        }
+        .restaurant-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 0.6rem;
+            gap: 0.75rem;
+        }
+        .restaurant-item.disabled {
+            opacity: 0.6;
+            background: #f0f0f0;
+        }
+        .restaurant-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .restaurant-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .restaurant-name {
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 0.95rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .restaurant-url {
+            font-size: 0.75rem;
+            color: #95a5a6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .empty-list {
+            text-align: center;
+            padding: 2rem;
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        /* Mobile optimizations */
         @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; }
-            .nav-container { flex-direction: column; gap: 1rem; }
+            .logo { font-size: 1.1rem; }
+            h1 { font-size: 1.25rem; }
+            main { padding: 1rem; }
+            .header { margin-bottom: 1rem; }
+            .sidebar { max-width: 100%; }
         }
     </style>
 </head>
 <body>
     <nav>
         <div class="nav-container">
-            <div class="logo">🍽️ Lunchmeny</div>
-            <button class="nav-btn" onclick="openSettings()">⚙️ Inställningar</button>
+            <div class="logo">Lunchmeny</div>
+            <button class="nav-btn" onclick="openSidebar()">
+                <span>Restauranger</span>
+            </button>
         </div>
     </nav>
 
     <main>
         <div class="header">
-            <h1>Dagens Lunchmenyer</h1>
+            <h1>Dagens Lunch</h1>
             <button id="refresh-btn" class="btn btn-primary" onclick="fetchAllMenus()">
-                🔄 Uppdatera
+                Uppdatera
             </button>
         </div>
         <div id="menus-container">
-            <p class="info-text">Klicka på "Uppdatera" för att hämta dagens menyer.<br><br>
-            Lägg till restauranger via ⚙️ Inställningar.</p>
+            <p class="info-text">Tryck "Uppdatera" för att hämta menyer.<br><br>
+            Lägg till restauranger via knappen "Restauranger".</p>
         </div>
     </main>
 
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settings-modal">
-        <div class="modal">
-            <h2>Lägg till restaurang</h2>
-            <div class="form-group">
-                <label for="restaurant-name">Restaurangnamn</label>
-                <input type="text" id="restaurant-name" placeholder="T.ex. Tildas Restaurang">
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Restauranger</h2>
+            <button class="sidebar-close" onclick="closeSidebar()">&times;</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="add-section">
+                <h3>Lägg till ny</h3>
+                <div class="form-group">
+                    <label for="restaurant-name">Namn</label>
+                    <input type="text" id="restaurant-name" placeholder="T.ex. Tildas">
+                </div>
+                <div class="form-group">
+                    <label for="restaurant-url">Hemsida</label>
+                    <input type="url" id="restaurant-url" placeholder="https://restaurang.se">
+                </div>
+                <button class="add-btn" onclick="addRestaurant()">+ Lägg till</button>
             </div>
-            <div class="form-group">
-                <label for="restaurant-url">URL (huvudsida räcker)</label>
-                <input type="url" id="restaurant-url" placeholder="https://example.com">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="addRestaurant()">Lägg till</button>
-                <button class="btn" style="background:#eee" onclick="closeSettings()">Stäng</button>
-            </div>
-            <div class="url-list">
-                <h3>Sparade restauranger</h3>
-                <p style="font-size:0.85rem;color:#7f8c8d;margin-bottom:1rem;">
-                    ✓ Bocka i för att visa, bocka ur för att dölja tillfälligt
-                </p>
+
+            <div class="restaurant-list">
+                <h3>Dina restauranger</h3>
+                <p class="restaurant-list-info">Bocka ur för att dölja tillfälligt</p>
                 <div id="saved-restaurants"></div>
             </div>
         </div>
@@ -294,13 +426,17 @@ HTML_TEMPLATE = '''
             return await res.json();
         }
 
-        function openSettings() {
-            document.getElementById('settings-modal').classList.add('active');
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('active');
+            document.getElementById('sidebar-overlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
             renderSavedRestaurants();
         }
 
-        function closeSettings() {
-            document.getElementById('settings-modal').classList.remove('active');
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+            document.body.style.overflow = '';
         }
 
         async function renderSavedRestaurants() {
@@ -308,30 +444,29 @@ HTML_TEMPLATE = '''
             const restaurants = await loadRestaurants();
 
             if (restaurants.length === 0) {
-                container.innerHTML = '<p style="color:#95a5a6;font-style:italic">Inga restauranger tillagda.</p>';
+                container.innerHTML = '<p class="empty-list">Inga restauranger tillagda ännu</p>';
                 return;
             }
 
             container.innerHTML = restaurants.map((r, i) => `
-                <div class="url-item ${r.enabled === false ? 'disabled' : ''}">
-                    <div class="url-item-left">
-                        <input type="checkbox"
-                               ${r.enabled !== false ? 'checked' : ''}
-                               onchange="toggleRestaurant(${i}, this.checked)"
-                               title="Visa/dölj denna restaurang">
-                        <div class="url-item-info">
-                            <div class="url-item-name">${escapeHtml(r.name)}</div>
-                            <div class="url-item-url">${escapeHtml(r.url)}</div>
-                        </div>
+                <div class="restaurant-item ${r.enabled === false ? 'disabled' : ''}">
+                    <input type="checkbox" class="restaurant-checkbox"
+                           ${r.enabled !== false ? 'checked' : ''}
+                           onchange="toggleRestaurant(${i}, this.checked)">
+                    <div class="restaurant-info">
+                        <div class="restaurant-name">${escapeHtml(r.name)}</div>
+                        <div class="restaurant-url">${escapeHtml(r.url)}</div>
                     </div>
-                    <button class="btn btn-danger" onclick="deleteRestaurant(${i})">🗑️</button>
+                    <button class="btn btn-danger" onclick="deleteRestaurant(${i})">🗑</button>
                 </div>
             `).join('');
         }
 
         async function addRestaurant() {
-            const name = document.getElementById('restaurant-name').value.trim();
-            const url = document.getElementById('restaurant-url').value.trim();
+            const nameInput = document.getElementById('restaurant-name');
+            const urlInput = document.getElementById('restaurant-url');
+            const name = nameInput.value.trim();
+            const url = urlInput.value.trim();
 
             if (!name || !url) {
                 alert('Fyll i både namn och URL');
@@ -344,8 +479,8 @@ HTML_TEMPLATE = '''
                 body: JSON.stringify({ name, url, enabled: true })
             });
 
-            document.getElementById('restaurant-name').value = '';
-            document.getElementById('restaurant-url').value = '';
+            nameInput.value = '';
+            urlInput.value = '';
             renderSavedRestaurants();
         }
 
@@ -355,10 +490,11 @@ HTML_TEMPLATE = '''
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled })
             });
+            renderSavedRestaurants();
         }
 
         async function deleteRestaurant(index) {
-            if (!confirm('Ta bort denna restaurang permanent?')) return;
+            if (!confirm('Ta bort denna restaurang?')) return;
             await fetch(`/api/restaurants/${index}`, { method: 'DELETE' });
             renderSavedRestaurants();
         }
@@ -372,15 +508,14 @@ HTML_TEMPLATE = '''
                 container.innerHTML = `
                     <div class="info-text">
                         <p>Inga restauranger tillagda ännu.</p>
-                        <button class="btn btn-primary" style="margin-top:1rem" onclick="openSettings()">
-                            Lägg till restauranger
+                        <button class="btn btn-primary" style="margin-top:1rem" onclick="openSidebar()">
+                            + Lägg till
                         </button>
                     </div>
                 `;
                 return;
             }
 
-            // Filtrera aktiva restauranger
             const activeRestaurants = restaurants.filter(r => r.enabled !== false);
             const disabledRestaurants = restaurants.filter(r => r.enabled === false);
 
@@ -388,62 +523,54 @@ HTML_TEMPLATE = '''
                 container.innerHTML = `
                     <div class="info-text">
                         <p>Alla restauranger är dolda.</p>
-                        <p style="margin-top:0.5rem">Aktivera restauranger i ⚙️ Inställningar.</p>
+                        <button class="btn btn-primary" style="margin-top:1rem" onclick="openSidebar()">
+                            Hantera restauranger
+                        </button>
                     </div>
                 `;
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = '⏳ Laddar...';
+            btn.textContent = 'Laddar...';
 
-            // Visa loading state för aktiva
+            // Loading state
             let html = activeRestaurants.map(r => `
                 <div class="menu-card loading">
                     <div class="menu-header">
-                        <div class="menu-title-row">
-                            <h2>${escapeHtml(r.name)}</h2>
-                        </div>
+                        <h2>${escapeHtml(r.name)}</h2>
                     </div>
-                    <div class="menu-content loading-text">🔍 Söker efter lunchmeny...</div>
+                    <div class="menu-content loading-text">Söker efter lunchmeny...</div>
                 </div>
             `).join('');
 
-            // Visa dolda restauranger
             if (disabledRestaurants.length > 0) {
                 html += disabledRestaurants.map(r => `
                     <div class="menu-card disabled">
-                        <div class="menu-header">
-                            <div class="menu-title-row">
-                                <h2>${escapeHtml(r.name)}</h2>
-                            </div>
-                        </div>
-                        <div class="menu-content disabled-text">Dold - aktivera i inställningar</div>
+                        <div class="menu-header"><h2>${escapeHtml(r.name)}</h2></div>
+                        <div class="menu-content disabled-text">Dold</div>
                     </div>
                 `).join('');
             }
 
             container.innerHTML = html;
 
-            // Hämta menyer för aktiva restauranger
+            // Fetch menus
             const res = await fetch('/api/menus');
             const menus = await res.json();
 
-            // Bygg upp resultatet
             html = menus.map(m => `
                 <div class="menu-card ${m.success ? 'success' : 'error'}">
                     <div class="menu-header">
-                        <div class="menu-title-row">
-                            <h2>${escapeHtml(m.name)}</h2>
-                        </div>
-                        <a href="${escapeHtml(m.source_url)}" target="_blank">Öppna källa →</a>
+                        <h2>${escapeHtml(m.name)}</h2>
+                        <a href="${escapeHtml(m.source_url)}" target="_blank">Källa</a>
                     </div>
                     ${m.success ? `
                         <div class="source-info">
                             <span class="badge ${m.source_type === 'pdf' ? 'badge-pdf' : 'badge-html'}">
-                                ${m.source_type === 'pdf' ? '📄 PDF' : '🌐 HTML'}
+                                ${m.source_type === 'pdf' ? 'PDF' : 'Webb'}
                             </span>
-                            Hämtad från: ${escapeHtml(m.source_url)}
+                            ${escapeHtml(m.source_url)}
                         </div>
                     ` : ''}
                     <div class="menu-content ${m.error ? 'error-text' : ''}">
@@ -452,29 +579,33 @@ HTML_TEMPLATE = '''
                 </div>
             `).join('');
 
-            // Lägg till dolda restauranger i slutet
             if (disabledRestaurants.length > 0) {
                 html += disabledRestaurants.map(r => `
                     <div class="menu-card disabled">
-                        <div class="menu-header">
-                            <div class="menu-title-row">
-                                <h2>${escapeHtml(r.name)}</h2>
-                            </div>
-                        </div>
-                        <div class="menu-content disabled-text">Dold - aktivera i inställningar</div>
+                        <div class="menu-header"><h2>${escapeHtml(r.name)}</h2></div>
+                        <div class="menu-content disabled-text">Dold</div>
                     </div>
                 `).join('');
             }
 
             container.innerHTML = html;
-
             btn.disabled = false;
-            btn.textContent = '🔄 Uppdatera';
+            btn.textContent = 'Uppdatera';
         }
 
-        document.getElementById('settings-modal').addEventListener('click', function(e) {
-            if (e.target === this) closeSettings();
-        });
+        // Swipe to close sidebar
+        let touchStartX = 0;
+        const sidebar = document.getElementById('sidebar');
+
+        sidebar.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        sidebar.addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - touchStartX;
+            if (diff > 100) closeSidebar(); // Swipe right to close
+        }, { passive: true });
     </script>
 </body>
 </html>
@@ -528,7 +659,6 @@ def get_menus():
     restaurants = load_restaurants()
     results = []
 
-    # Endast hämta menyer för aktiverade restauranger
     for r in restaurants:
         if r.get('enabled', True):
             result = scrape_lunch_menu(r['url'])
