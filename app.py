@@ -96,6 +96,7 @@ HTML_TEMPLATE = '''
         .menu-card.error { border-left: 4px solid #e74c3c; }
         .menu-card.loading { border-left: 4px solid #f39c12; }
         .menu-card.success { border-left: 4px solid #27ae60; }
+        .menu-card.disabled { opacity: 0.5; border-left: 4px solid #95a5a6; }
         .menu-header {
             display: flex;
             justify-content: space-between;
@@ -109,6 +110,16 @@ HTML_TEMPLATE = '''
         .menu-header h2 { color: #2c3e50; font-size: 1.25rem; }
         .menu-header a { color: #3498db; text-decoration: none; font-size: 0.9rem; }
         .menu-header a:hover { text-decoration: underline; }
+        .menu-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .menu-title-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
         .source-info {
             font-size: 0.8rem;
             color: #7f8c8d;
@@ -137,6 +148,7 @@ HTML_TEMPLATE = '''
         }
         .error-text { color: #e74c3c; }
         .loading-text { color: #f39c12; }
+        .disabled-text { color: #95a5a6; font-style: italic; }
         .info-text {
             text-align: center;
             padding: 3rem;
@@ -173,7 +185,8 @@ HTML_TEMPLATE = '''
             font-weight: 500;
             color: #34495e;
         }
-        .form-group input {
+        .form-group input[type="text"],
+        .form-group input[type="url"] {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #ddd;
@@ -192,6 +205,19 @@ HTML_TEMPLATE = '''
             background: #f8f9fa;
             border-radius: 6px;
             margin-bottom: 0.5rem;
+        }
+        .url-item.disabled { opacity: 0.6; }
+        .url-item-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            overflow: hidden;
+        }
+        .url-item-left input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
         }
         .url-item-info { flex: 1; overflow: hidden; }
         .url-item-name { font-weight: 500; color: #2c3e50; }
@@ -238,7 +264,7 @@ HTML_TEMPLATE = '''
                 <input type="text" id="restaurant-name" placeholder="T.ex. Tildas Restaurang">
             </div>
             <div class="form-group">
-                <label for="restaurant-url">URL (huvudsida eller lunchmeny)</label>
+                <label for="restaurant-url">URL (huvudsida räcker)</label>
                 <input type="url" id="restaurant-url" placeholder="https://example.com">
             </div>
             <div class="modal-buttons">
@@ -247,6 +273,9 @@ HTML_TEMPLATE = '''
             </div>
             <div class="url-list">
                 <h3>Sparade restauranger</h3>
+                <p style="font-size:0.85rem;color:#7f8c8d;margin-bottom:1rem;">
+                    ✓ Bocka i för att visa, bocka ur för att dölja tillfälligt
+                </p>
                 <div id="saved-restaurants"></div>
             </div>
         </div>
@@ -284,12 +313,18 @@ HTML_TEMPLATE = '''
             }
 
             container.innerHTML = restaurants.map((r, i) => `
-                <div class="url-item">
-                    <div class="url-item-info">
-                        <div class="url-item-name">${escapeHtml(r.name)}</div>
-                        <div class="url-item-url">${escapeHtml(r.url)}</div>
+                <div class="url-item ${r.enabled === false ? 'disabled' : ''}">
+                    <div class="url-item-left">
+                        <input type="checkbox"
+                               ${r.enabled !== false ? 'checked' : ''}
+                               onchange="toggleRestaurant(${i}, this.checked)"
+                               title="Visa/dölj denna restaurang">
+                        <div class="url-item-info">
+                            <div class="url-item-name">${escapeHtml(r.name)}</div>
+                            <div class="url-item-url">${escapeHtml(r.url)}</div>
+                        </div>
                     </div>
-                    <button class="btn btn-danger" onclick="deleteRestaurant(${i})">Ta bort</button>
+                    <button class="btn btn-danger" onclick="deleteRestaurant(${i})">🗑️</button>
                 </div>
             `).join('');
         }
@@ -306,7 +341,7 @@ HTML_TEMPLATE = '''
             await fetch('/api/restaurants', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, url })
+                body: JSON.stringify({ name, url, enabled: true })
             });
 
             document.getElementById('restaurant-name').value = '';
@@ -314,8 +349,16 @@ HTML_TEMPLATE = '''
             renderSavedRestaurants();
         }
 
+        async function toggleRestaurant(index, enabled) {
+            await fetch(`/api/restaurants/${index}/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+        }
+
         async function deleteRestaurant(index) {
-            if (!confirm('Ta bort denna restaurang?')) return;
+            if (!confirm('Ta bort denna restaurang permanent?')) return;
             await fetch(`/api/restaurants/${index}`, { method: 'DELETE' });
             renderSavedRestaurants();
         }
@@ -337,27 +380,62 @@ HTML_TEMPLATE = '''
                 return;
             }
 
+            // Filtrera aktiva restauranger
+            const activeRestaurants = restaurants.filter(r => r.enabled !== false);
+            const disabledRestaurants = restaurants.filter(r => r.enabled === false);
+
+            if (activeRestaurants.length === 0) {
+                container.innerHTML = `
+                    <div class="info-text">
+                        <p>Alla restauranger är dolda.</p>
+                        <p style="margin-top:0.5rem">Aktivera restauranger i ⚙️ Inställningar.</p>
+                    </div>
+                `;
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = '⏳ Laddar...';
 
-            // Visa loading state
-            container.innerHTML = restaurants.map(r => `
+            // Visa loading state för aktiva
+            let html = activeRestaurants.map(r => `
                 <div class="menu-card loading">
                     <div class="menu-header">
-                        <h2>${escapeHtml(r.name)}</h2>
+                        <div class="menu-title-row">
+                            <h2>${escapeHtml(r.name)}</h2>
+                        </div>
                     </div>
                     <div class="menu-content loading-text">🔍 Söker efter lunchmeny...</div>
                 </div>
             `).join('');
 
-            // Hämta menyer
+            // Visa dolda restauranger
+            if (disabledRestaurants.length > 0) {
+                html += disabledRestaurants.map(r => `
+                    <div class="menu-card disabled">
+                        <div class="menu-header">
+                            <div class="menu-title-row">
+                                <h2>${escapeHtml(r.name)}</h2>
+                            </div>
+                        </div>
+                        <div class="menu-content disabled-text">Dold - aktivera i inställningar</div>
+                    </div>
+                `).join('');
+            }
+
+            container.innerHTML = html;
+
+            // Hämta menyer för aktiva restauranger
             const res = await fetch('/api/menus');
             const menus = await res.json();
 
-            container.innerHTML = menus.map(m => `
+            // Bygg upp resultatet
+            html = menus.map(m => `
                 <div class="menu-card ${m.success ? 'success' : 'error'}">
                     <div class="menu-header">
-                        <h2>${escapeHtml(m.name)}</h2>
+                        <div class="menu-title-row">
+                            <h2>${escapeHtml(m.name)}</h2>
+                        </div>
                         <a href="${escapeHtml(m.source_url)}" target="_blank">Öppna källa →</a>
                     </div>
                     ${m.success ? `
@@ -373,6 +451,22 @@ HTML_TEMPLATE = '''
                     </div>
                 </div>
             `).join('');
+
+            // Lägg till dolda restauranger i slutet
+            if (disabledRestaurants.length > 0) {
+                html += disabledRestaurants.map(r => `
+                    <div class="menu-card disabled">
+                        <div class="menu-header">
+                            <div class="menu-title-row">
+                                <h2>${escapeHtml(r.name)}</h2>
+                            </div>
+                        </div>
+                        <div class="menu-content disabled-text">Dold - aktivera i inställningar</div>
+                    </div>
+                `).join('');
+            }
+
+            container.innerHTML = html;
 
             btn.disabled = false;
             btn.textContent = '🔄 Uppdatera';
@@ -403,7 +497,8 @@ def add_restaurant():
     restaurants = load_restaurants()
     restaurants.append({
         'name': data.get('name', ''),
-        'url': data.get('url', '')
+        'url': data.get('url', ''),
+        'enabled': data.get('enabled', True)
     })
     save_restaurants(restaurants)
     return jsonify({'success': True})
@@ -418,15 +513,27 @@ def delete_restaurant(index):
     return jsonify({'success': True})
 
 
+@app.route('/api/restaurants/<int:index>/toggle', methods=['POST'])
+def toggle_restaurant(index):
+    data = request.get_json()
+    restaurants = load_restaurants()
+    if 0 <= index < len(restaurants):
+        restaurants[index]['enabled'] = data.get('enabled', True)
+        save_restaurants(restaurants)
+    return jsonify({'success': True})
+
+
 @app.route('/api/menus', methods=['GET'])
 def get_menus():
     restaurants = load_restaurants()
     results = []
 
+    # Endast hämta menyer för aktiverade restauranger
     for r in restaurants:
-        result = scrape_lunch_menu(r['url'])
-        result['name'] = r['name']
-        results.append(result)
+        if r.get('enabled', True):
+            result = scrape_lunch_menu(r['url'])
+            result['name'] = r['name']
+            results.append(result)
 
     return jsonify(results)
 

@@ -13,11 +13,9 @@ HEADERS = {
     'Accept-Language': 'sv-SE,sv;q=0.9,en;q=0.8',
 }
 
-# Nyckelord för att hitta lunchlänkar
-LUNCH_KEYWORDS = [
-    'lunch', 'lunchmeny', 'veckomeny', 'veckans-meny', 'dagens-lunch',
-    'menu', 'meny', 'matsedel', 'veckans_meny'
-]
+# Nyckelord för att hitta lunchlänkar - prioriterade först
+LUNCH_KEYWORDS_HIGH = ['lunch', 'lunchmeny', 'veckomeny', 'veckans-lunch', 'dagens-lunch', 'veckans_lunch']
+LUNCH_KEYWORDS_LOW = ['menu', 'meny', 'matsedel']
 
 
 def fetch_page(url, timeout=15):
@@ -31,6 +29,7 @@ def find_lunch_links(html, base_url):
     """
     Hitta alla länkar som kan vara relaterade till lunchmenyn.
     Returnerar lista med (url, typ, score) där typ är 'page' eller 'pdf'.
+    Prioriterar lunch-specifika länkar över generiska meny-länkar.
     """
     soup = BeautifulSoup(html, 'html.parser')
     candidates = []
@@ -49,15 +48,23 @@ def find_lunch_links(html, base_url):
         score = 0
         href_lower = href.lower()
 
-        for keyword in LUNCH_KEYWORDS:
+        # Hög prioritet för lunch-specifika nyckelord
+        for keyword in LUNCH_KEYWORDS_HIGH:
             if keyword in href_lower:
-                score += 10
+                score += 25  # Högre score för lunch i URL
             if keyword in text:
+                score += 15  # Hög score för lunch i länktext
+
+        # Låg prioritet för generiska meny-nyckelord
+        for keyword in LUNCH_KEYWORDS_LOW:
+            if keyword in href_lower and score == 0:  # Bara om ingen lunch hittats
                 score += 5
+            if keyword in text and score < 15:
+                score += 3
 
         # PDF:er med lunch-relaterade namn får extra poäng
         if is_pdf and score > 0:
-            score += 15
+            score += 20
 
         # Ignorera externa länkar, mailto, tel, etc.
         if href.startswith(('mailto:', 'tel:', 'javascript:', '#')):
