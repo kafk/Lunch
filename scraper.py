@@ -144,8 +144,8 @@ def extract_menu_from_html(html):
     for el in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'noscript', 'iframe']):
         el.decompose()
 
-    # Ta bort element med navigation-klasser
-    nav_patterns = ['nav', 'menu', 'header', 'footer', 'sidebar', 'social', 'cookie', 'popup']
+    # Ta bort element med navigation-klasser (INTE 'menu' - det kan vara menyinnehåll!)
+    nav_patterns = ['navbar', 'nav-', 'navigation', 'site-header', 'site-footer', 'sidebar', 'social', 'cookie', 'popup']
     for el in soup.find_all(class_=lambda x: x and any(p in str(x).lower() for p in nav_patterns)):
         el.decompose()
 
